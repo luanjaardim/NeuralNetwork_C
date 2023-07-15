@@ -1,5 +1,4 @@
-#include "nn.h"
-#include <assert.h>
+#include "matrix.h"
 
 Mat mat_create(size_t rows, size_t cols)
 {
