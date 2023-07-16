@@ -31,6 +31,21 @@ void mat_fill(Mat m, double element)
   }
 }
 
+// a double from 0 to 1
+double random_value()
+{
+  return (double) rand() / (double) RAND_MAX;
+}
+
+void mat_randomize(Mat m)
+{
+  for(size_t i = 0; i < m.rows; i++) {
+    for(size_t j = 0; j < m.cols; j++) {
+      MAT_AT(m, i, j) = random_value();
+    }
+  }
+}
+
 void mat_copy(Mat dest, Mat src)
 {
   assert(dest.rows == src.rows);
@@ -70,6 +85,15 @@ void mat_add(Mat dest, Mat another)
   }
 }
 
+void mat_activation_fn(Mat m, double (* function)(double))
+{
+  for(size_t i = 0; i < m.rows; i++) {
+    for(size_t j = 0; j < m.cols; j++) {
+      MAT_AT(m, i, j) = function(MAT_AT(m, i, j));
+    }
+  }
+}
+
 SubMat mat_get_submat(Mat origin, SubMatDim dim) {
   assert(dim.beginRow >= 0 && dim.beginRow < origin.rows);
   assert(dim.beginCol >= 0 && dim.beginCol < origin.cols);
@@ -82,6 +106,16 @@ SubMat mat_get_submat(Mat origin, SubMatDim dim) {
     .row_size = origin.row_size,
     .data = &MAT_AT(origin, dim.beginRow, dim.beginCol)
   };
+}
+
+SubMat mat_get_row(Mat origin, size_t row)
+{
+  return mat_get_submat(origin, (SubMatDim){row, 0, 1, origin.cols});
+}
+
+SubMat mat_get_col(Mat origin, size_t col)
+{
+  return mat_get_submat(origin, (SubMatDim){0, col, origin.rows, 1});
 }
 
 void mat_destruct(Mat *m)
