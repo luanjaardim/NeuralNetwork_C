@@ -10,6 +10,15 @@ Mat mat_create(size_t rows, size_t cols)
   };
 }
 
+Mat mat_create_from(size_t rows, size_t cols, size_t elements[rows][cols])
+{
+  Mat m = mat_create(rows, cols);
+  for(size_t i = 0; i < rows; i++)
+    for(size_t j = 0; j < cols; j++)
+      MAT_AT(m, i, j) = (double) elements[i][j];
+  return m;
+}
+
 void mat_print(Mat m, const char* variable_name)
 {
   printf("%s = {\n", variable_name);
@@ -51,11 +60,7 @@ void mat_copy(Mat dest, Mat src)
   assert(dest.rows == src.rows);
   assert(dest.cols == src.cols);
 
-  for(size_t i = 0; i < dest.rows; i++) {
-    for(size_t j = 0; j < dest.cols; j++) {
-      MAT_AT(dest, i, j) = MAT_AT(src, i, j);
-    }
-  }
+  memcpy((void *)dest.data, (void *)src.data, sizeof(double)*src.rows*src.cols);
 }
 
 void mat_mul(Mat dest, Mat m1, Mat m2)
@@ -100,7 +105,7 @@ SubMat mat_get_submat(Mat origin, SubMatDim dim) {
   assert((dim.beginRow + dim.qtdRows) <= origin.rows);
   assert((dim.beginCol + dim.qtdCols) <= origin.cols);
 
-  return (Mat) {
+  return (SubMat) {
     .rows = dim.qtdRows,
     .cols = dim.qtdCols,
     .row_size = origin.row_size,
@@ -118,7 +123,7 @@ SubMat mat_get_col(Mat origin, size_t col)
   return mat_get_submat(origin, (SubMatDim){0, col, origin.rows, 1});
 }
 
-void mat_destruct(Mat *m)
+void mat_destruct(Mat m)
 {
-  free(m->data);
+  free(m.data);
 }
