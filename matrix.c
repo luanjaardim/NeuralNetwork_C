@@ -78,14 +78,35 @@ void mat_mul(Mat dest, Mat m1, Mat m2)
   }
 }
 
-void mat_add(Mat dest, Mat another)
+void mat_const_mul(Mat dest, double val)
 {
-  assert(dest.rows == another.rows);
-  assert(dest.cols == another.cols);
+  for(size_t i = 0; i < dest.rows; i++) {
+    for(size_t j = 0; j < dest.cols; j++) {
+      MAT_AT(dest, i, j) *= val;
+    }
+  }
+}
+
+void mat_add(Mat dest, Mat first, Mat second)
+{
+  assert(dest.rows == first.rows && first.rows == second.rows);
+  assert(dest.cols == first.cols && first.cols == second.cols);
 
   for(size_t i = 0; i < dest.rows; i++) {
     for(size_t j = 0; j < dest.cols; j++) {
-      MAT_AT(dest, i, j) += MAT_AT(another, i, j);
+      MAT_AT(dest, i, j) = MAT_AT(first, i, j) + MAT_AT(second, i, j);
+    }
+  }
+}
+
+void mat_sub(Mat dest, Mat first, Mat second)
+{
+  assert(dest.rows == first.rows && first.rows == second.rows);
+  assert(dest.cols == first.cols && first.cols == second.cols);
+
+  for(size_t i = 0; i < dest.rows; i++) {
+    for(size_t j = 0; j < dest.cols; j++) {
+      MAT_AT(dest, i, j) = MAT_AT(first, i, j) - MAT_AT(second, i, j);
     }
   }
 }
