@@ -20,6 +20,7 @@
 typedef struct Matrix {
     size_t rows, cols, row_size;
     double *data;
+    int T; //for transpose matrixes, 1 if it was transposed
 } Mat;
 
 typedef Mat SubMat;
@@ -32,6 +33,8 @@ typedef struct SubMatrixDimensions {
 #define MAT_PRINT(m) mat_print((m), #m)
 
 Mat mat_create(size_t rows, size_t cols);
+void mat_transpose(Mat *m);
+double *mat_at(Mat m, size_t i, size_t j);
 Mat mat_create_from(size_t rows, size_t cols, size_t elements[rows][cols]);
 void mat_print(Mat m, const char* variable_name);
 void mat_fill(Mat m, double element);
