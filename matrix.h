@@ -44,7 +44,7 @@ void mat_mul(Mat dest, Mat m1, Mat m2);
 void mat_const_mul(Mat dest, double val);
 void mat_add(Mat dest, Mat first, Mat second);
 void mat_sub(Mat dest, Mat first, Mat second);
-void mat_activation_fn(Mat m, double (* function)(double));
+void mat_apply_fn(Mat dst, Mat src, double (* function)(double));
 SubMat mat_get_submat(Mat origin, SubMatDim dim);
 SubMat mat_get_row(Mat origin, size_t row);
 SubMat mat_get_col(Mat origin, size_t col);

@@ -136,11 +136,13 @@ void mat_sub(Mat dest, Mat first, Mat second)
   }
 }
 
-void mat_activation_fn(Mat m, double (* function)(double))
+void mat_apply_fn(Mat dst, Mat src, double (* function)(double))
 {
-  for(size_t i = 0; i < m.rows; i++) {
-    for(size_t j = 0; j < m.cols; j++) {
-      *mat_at(m, i, j) = function(*mat_at(m, i, j));
+  assert(dst.rows == src.rows && dst.cols == src.cols);
+
+  for(size_t i = 0; i < dst.rows; i++) {
+    for(size_t j = 0; j < dst.cols; j++) {
+      *mat_at(dst, i, j) = function(*mat_at(src, i, j));
     }
   }
 }
