@@ -24,6 +24,8 @@ void nn_learn(NN n, Gradient g);
 void nn_destruct(NN n, Gradient g);
 double nn_cost(NN n, Mat train_input, Mat train_output);
 void nn_finite_diff_learn(NN n, Mat train_input, Mat train_output, double eps, double rate);
+void nn_save_up(NN n);
+NN nn_back_up(double (* activate_function)(double));
 
 #define ARRAY_LEN(ar) sizeof(ar)/sizeof((ar)[0])
 #define OUTPUT(n) (n).is[(n).nnLayers]

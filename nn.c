@@ -1,5 +1,6 @@
 #include "nn.h"
 #include "matrix.h"
+#include <stdio.h>
 
 NN nn_create(size_t *layers, size_t layersLen, double (* activate_function)(double), double (* deriv_act_function)(double))
 {
@@ -225,6 +226,51 @@ void nn_finite_diff_learn(NN n, Mat train_input, Mat train_output, double eps, d
       MAT_AT(n.bs[i], 0, k) -= rate*finite_diff;
     }
   }
+}
+
+void nn_save_up(NN n) {
+  printf("%zu\n", n.nnLayers + 1);
+  for(int i = 0; i < n.nnLayers + 1; i++) {
+    printf("%zu ", n.is[i].cols);
+  }
+  printf("\n");
+
+  for(int i = 0; i < n.nnLayers; i++) {
+  //printf("peso\n");
+    for(int j = 0; j < n.ws[i].rows; j++) {
+      for(int k = 0; k < n.ws[i].cols; k++)
+        printf("%lf ", MAT_AT(n.ws[i], j, k));
+      printf("\n");
+    }
+  //printf("bias\n");
+    for(int j = 0; j < n.bs[i].cols; j++)
+      printf("%lf ", LINE_AT(n.bs[i], j));
+    printf("\n");
+  }
+}
+
+NN nn_back_up(double (* activate_function)(double)) {
+  size_t count_layers;
+  scanf("%zu", &count_layers);
+
+  size_t arr[count_layers];
+  for(int i = 0; i < count_layers; i++) {
+    scanf("%zu", arr + i);
+  }
+
+  NN n = nn_create(arr, count_layers, activate_function, NULL); 
+  //as we are only using the forward, we don't need the deriv function
+  
+  for(int i = 0; i < n.nnLayers; i++) {
+    for(int j = 0; j < n.ws[i].rows; j++) {
+      for(int k = 0; k < n.ws[i].cols; k++)
+        scanf("%lf", &MAT_AT(n.ws[i], j, k));
+    }
+    for(int j = 0; j < n.bs[i].cols; j++)
+      scanf("%lf", &LINE_AT(n.bs[i], j));
+  }
+
+  return n;
 }
 
 double sigmoid(double x) 
