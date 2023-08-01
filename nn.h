@@ -12,10 +12,16 @@ typedef struct NeuralNetwork {
   double (* deriv_act_function)(double);
 } NN;
 
+typedef NN Gradient;
+
 NN nn_create(size_t *layers, size_t layersLen, double (* activation_function)(double), double (* deriv_act_function)(double));
+Gradient gg_create_from_nn(NN n);
 void nn_randomize_params(NN n);
-void nn_forward_propagation(NN n, Mat input_train, double *output);
-void nn_destruct(NN n);
+void nn_forward(NN n, Mat input_train, double *output);
+void nn_zero(NN n);
+void nn_backward_propagation(NN n, Gradient g, Mat train_input, Mat train_output);
+void nn_learn(NN n, Gradient g);
+void nn_destruct(NN n, Gradient g);
 double nn_cost(NN n, Mat train_input, Mat train_output);
 void nn_finite_diff_learn(NN n, Mat train_input, Mat train_output, double eps, double rate);
 

@@ -30,14 +30,39 @@ NN nn_create(size_t *layers, size_t layersLen, double (* activate_function)(doub
   return n;
 }
 
-void nn_destruct(NN n)
+Gradient gg_create_from_nn(NN n)
 {
+  Gradient g = (Gradient) {
+    .nnLayers = n.nnLayers,
+    .is = (Mat *) malloc(sizeof(Mat) * (n.nnLayers + 1)),
+    .ws = (Mat *) malloc(sizeof(Mat) * (n.nnLayers)),
+    .bs = (Mat *) malloc(sizeof(Mat) * (n.nnLayers)),
+    .activation_function = n.activation_function,
+    .deriv_act_function = n.deriv_act_function
+  };
+  for(size_t i = 0; i < g.nnLayers; i++) {
+    g.is[i+1] = mat_create(n.is[i+1].rows, n.is[i+1].cols);
+    g.ws[i] = mat_create(n.ws[i].rows, n.ws[i].cols);
+    g.bs[i] = mat_create(n.bs[i].rows, n.bs[i].cols);
+  }
+  g.is[0] = mat_create(n.is[0].rows, n.is[0].cols);
+
+  return g;
+}
+
+void nn_destruct(NN n, Gradient g)
+{
+
   for(size_t i = 0; i < n.nnLayers; i++) {
     mat_destruct(n.is[i+1]);
     mat_destruct(n.bs[i]);
     mat_destruct(n.ws[i]);
+    mat_destruct(g.is[i+1]);
+    mat_destruct(g.bs[i]);
+    mat_destruct(g.ws[i]);
   }
   mat_destruct(n.is[0]);
+  mat_destruct(g.is[0]);
 
   free(n.is);
   free(n.bs);
@@ -45,6 +70,22 @@ void nn_destruct(NN n)
   n.is = NULL;
   n.bs = NULL;
   n.ws = NULL;
+  free(g.is);
+  free(g.bs);
+  free(g.ws);
+  g.is = NULL;
+  g.bs = NULL;
+  g.ws = NULL;
+}
+
+void nn_zero(NN n)
+{
+  for(size_t i = 0; i < n.nnLayers; i++) {
+    mat_fill(n.is[i+1], 0.0f);
+    mat_fill(n.ws[i], 0.0f);
+    mat_fill(n.bs[i], 0.0f);
+  }
+  mat_fill(n.is[0], 0.0f);
 }
 
 void nn_randomize_params(NN n)
@@ -55,26 +96,82 @@ void nn_randomize_params(NN n)
   }
 }
 
-void nn_forward_propagation(NN n, Mat input_train, double *output)
+void nn_forward(NN n, Mat input_train, double *output)
 {
   assert(input_train.rows == n.is[0].rows && input_train.cols == n.is[0].cols);
   mat_copy(n.is[0], input_train);
 
-  /* activated_value holds the current intermediate value
-   * after applied the activation function
-   */
-  Mat activated_value = mat_create(1, input_train.cols);
-  mat_copy(activated_value, n.is[0]);
-
   for(size_t i = 0; i < n.nnLayers; i++) {
-    mat_mul(n.is[i+1], activated_value, n.ws[i]);
+    mat_mul(n.is[i+1], n.is[i], n.ws[i]);
     mat_add(n.is[i+1], n.is[i+1], n.bs[i]);
-    mat_apply_fn(activated_value, n.is[i+1], n.activation_function);
+    mat_apply_fn(n.is[i+1], n.is[i+1], n.activation_function);
   }
 
-  mat_destruct(activated_value);
   if(output != NULL)
     memcpy((void *)output, (void *)OUTPUT(n).data, OUTPUT(n).cols*sizeof(double));
+}
+
+void nn_backward_propagation(NN n, Gradient g, Mat train_input, Mat train_output)
+{
+  nn_zero(g);
+  size_t m = train_input.rows;
+
+  for(size_t sample = 0; sample < train_input.rows; sample++)
+  {
+    SubMat input_sample = mat_get_row(train_input, sample);
+    SubMat output_sample = mat_get_row(train_output, sample);
+
+    nn_forward(n, input_sample, NULL);
+
+    //cleaning the intermediates values used on the previoues sample calculation
+    for(size_t j = 0; j < g.nnLayers + 1; j++) {
+      mat_fill(g.is[j], 0.0f);
+    }
+
+    for(size_t i = 0; i < output_sample.cols; i++) {
+      LINE_AT(OUTPUT(g), i) = LINE_AT(OUTPUT(n), i) - LINE_AT(output_sample, i);
+    }
+
+    for(int l = n.nnLayers - 1; l >= 0; l--) 
+    {
+      float cur_act_value, diff_expected, deriv_cur_act_value;
+      for(int i = 0; i < n.ws[l].cols; i++) {
+        diff_expected = LINE_AT(g.is[l+1], i);
+        cur_act_value = LINE_AT(n.is[l+1], i);
+        deriv_cur_act_value = n.deriv_act_function(cur_act_value);
+
+        LINE_AT(g.bs[l], i) += 2*diff_expected*deriv_cur_act_value;
+
+        for(int j = 0; j < n.ws[l].rows; j++) {
+          MAT_AT(g.ws[l], j, i) += 2*diff_expected*deriv_cur_act_value*LINE_AT(n.is[l], j);
+          LINE_AT(g.is[l], j) += 2*diff_expected*deriv_cur_act_value*MAT_AT(n.ws[l], j, i);
+        }
+      }
+    }
+  }
+
+  for(size_t i = 0; i < n.nnLayers; i++)
+  {
+    for (size_t j = 0; j < g.ws[i].rows; j++) {
+        for (size_t k = 0; k < g.ws[i].cols; k++) {
+            MAT_AT(g.ws[i], j, k) /= (double)m;
+        }
+    }
+    for (size_t k = 0; k < g.bs[i].cols; k++) {
+        LINE_AT(g.bs[i], k) /= (double)m;
+    }
+  }
+}
+
+void nn_learn(NN n, Gradient g)
+{
+  for(size_t i = 0; i < n.nnLayers; i++) {
+    for(size_t j = 0; j < n.ws[i].cols; j++) {
+      LINE_AT(n.bs[i], j) -= LINE_AT(g.bs[i], j);
+      for(size_t k = 0; k < n.ws[i].rows; k++)
+        MAT_AT(n.ws[i], k, j) -= MAT_AT(g.ws[i], k, j);
+    }
+  }
 }
 
 double nn_cost(NN n, Mat train_input, Mat train_output)
@@ -91,7 +188,7 @@ double nn_cost(NN n, Mat train_input, Mat train_output)
     SubMat in = mat_get_row(train_input, i);
     SubMat out = mat_get_row(train_output, i);
 
-    nn_forward_propagation(n, in, output_vals);
+    nn_forward(n, in, output_vals);
 
     for(size_t j = 0; j < out.cols; j++) {
       float diff = output_vals[j] - out.data[j];
@@ -137,7 +234,7 @@ double sigmoid(double x)
 
 double deriv_sig(double x)
 {
-  return sigmoid(x) * (1 - sigmoid(x));
+  return (x) * (1 - (x));
 }
 
 double reLU(double x)

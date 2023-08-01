@@ -32,7 +32,7 @@ double *mat_at(Mat m, size_t i, size_t j)
 
   assert((i >= 0 && i < m.rows) && (j>= 0 && j < m.cols));
 
-  return (m.T) ? &MAT_AT(m, j, i) : &MAT_AT(m, i, j);
+  return (m.T) ? m.data + (j*m.row_size + i) : m.data + (i*m.row_size + j);
 }
 
 Mat mat_create_from(size_t rows, size_t cols, size_t elements[rows][cols])

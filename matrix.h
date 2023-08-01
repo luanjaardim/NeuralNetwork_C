@@ -29,7 +29,8 @@ typedef struct SubMatrixDimensions {
   size_t beginRow, beginCol, qtdRows, qtdCols;
 } SubMatDim;
 
-#define MAT_AT(m, i, j) (m).data[i*(m).row_size + j]
+#define MAT_AT(m, i, j) *mat_at((m), (i), (j))
+#define LINE_AT(m, i) *mat_at((m), 0, (i))
 #define MAT_PRINT(m) mat_print((m), #m)
 
 Mat mat_create(size_t rows, size_t cols);
