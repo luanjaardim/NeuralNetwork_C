@@ -35,7 +35,7 @@ double *mat_at(Mat m, size_t i, size_t j)
   return (m.T) ? m.data + (j*m.row_size + i) : m.data + (i*m.row_size + j);
 }
 
-Mat mat_create_from(size_t rows, size_t cols, size_t elements[rows][cols])
+Mat mat_create_from(size_t rows, size_t cols, double elements[rows][cols])
 {
   Mat m = mat_create(rows, cols);
   for(size_t i = 0; i < rows; i++)

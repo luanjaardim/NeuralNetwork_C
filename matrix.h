@@ -36,7 +36,7 @@ typedef struct SubMatrixDimensions {
 Mat mat_create(size_t rows, size_t cols);
 void mat_transpose(Mat *m);
 double *mat_at(Mat m, size_t i, size_t j);
-Mat mat_create_from(size_t rows, size_t cols, size_t elements[rows][cols]);
+Mat mat_create_from(size_t rows, size_t cols, double elements[rows][cols]);
 void mat_print(Mat m, const char* variable_name);
 void mat_fill(Mat m, double element);
 void mat_randomize(Mat m);
