@@ -20,8 +20,9 @@ void nn_randomize_params(NN n);
 void nn_forward(NN n, Mat input_train, double *output);
 void nn_zero(NN n);
 void nn_backward_propagation(NN n, Gradient g, Mat train_input, Mat train_output);
-void nn_learn(NN n, Gradient g);
+void nn_learn(NN n, Gradient g, double rate);
 void nn_destruct(NN n, Gradient g);
+void nn_accuracy(NN n, Mat test_input, Mat test_output);
 double nn_cost(NN n, Mat train_input, Mat train_output);
 void nn_finite_diff_learn(NN n, Mat train_input, Mat train_output, double eps, double rate);
 void nn_save_up(NN n);
@@ -29,6 +30,7 @@ NN nn_back_up(double (* activate_function)(double));
 
 #define ARRAY_LEN(ar) sizeof(ar)/sizeof((ar)[0])
 #define OUTPUT(n) (n).is[(n).nnLayers]
+#define INPUT(n) (n).is[0]
 
 double sigmoid(double x);
 double deriv_sig(double x);

@@ -1,6 +1,5 @@
 #include "nn.h"
 #include "matrix.h"
-#include <stdio.h>
 
 NN nn_create(size_t *layers, size_t layersLen, double (* activate_function)(double), double (* deriv_act_function)(double))
 {
@@ -89,6 +88,14 @@ void nn_zero(NN n)
   mat_fill(n.is[0], 0.0f);
 }
 
+void mat_softmax(Mat matrix) {
+  assert(matrix.rows == 1);
+  double sum = 0;
+  for(int i = 0; i < matrix.cols; i++) sum += exp(LINE_AT(matrix, i));
+  
+  for(int i = 0; i < matrix.cols; i++) LINE_AT(matrix, i) = exp(LINE_AT(matrix, i))/sum;
+}
+
 void nn_randomize_params(NN n)
 {
   for(size_t i = 0; i < n.nnLayers; i++) {
@@ -100,13 +107,16 @@ void nn_randomize_params(NN n)
 void nn_forward(NN n, Mat input_train, double *output)
 {
   assert(input_train.rows == n.is[0].rows && input_train.cols == n.is[0].cols);
-  mat_copy(n.is[0], input_train);
+  mat_copy(INPUT(n), input_train);
 
-  for(size_t i = 0; i < n.nnLayers; i++) {
+  for(size_t i = 0; i < n.nnLayers-1; i++) {
     mat_mul(n.is[i+1], n.is[i], n.ws[i]);
     mat_add(n.is[i+1], n.is[i+1], n.bs[i]);
     mat_apply_fn(n.is[i+1], n.is[i+1], n.activation_function);
   }
+  mat_mul(OUTPUT(n), n.is[n.nnLayers - 1], n.ws[n.nnLayers - 1]);
+  mat_add(OUTPUT(n), OUTPUT(n), n.bs[n.nnLayers - 1]);
+  mat_softmax(OUTPUT(n));
 
   if(output != NULL)
     memcpy((void *)output, (void *)OUTPUT(n).data, OUTPUT(n).cols*sizeof(double));
@@ -164,13 +174,13 @@ void nn_backward_propagation(NN n, Gradient g, Mat train_input, Mat train_output
   }
 }
 
-void nn_learn(NN n, Gradient g)
+void nn_learn(NN n, Gradient g, double rate)
 {
   for(size_t i = 0; i < n.nnLayers; i++) {
     for(size_t j = 0; j < n.ws[i].cols; j++) {
-      LINE_AT(n.bs[i], j) -= LINE_AT(g.bs[i], j);
+      LINE_AT(n.bs[i], j) -= rate * LINE_AT(g.bs[i], j);
       for(size_t k = 0; k < n.ws[i].rows; k++)
-        MAT_AT(n.ws[i], k, j) -= MAT_AT(g.ws[i], k, j);
+        MAT_AT(n.ws[i], k, j) -= rate * MAT_AT(g.ws[i], k, j);
     }
   }
 }
@@ -228,6 +238,26 @@ void nn_finite_diff_learn(NN n, Mat train_input, Mat train_output, double eps, d
   }
 }
 
+void nn_accuracy(NN n, Mat test_input, Mat test_output) {
+  size_t m = test_input.rows;
+  double res[OUTPUT(n).cols];
+  int correct = 0;
+  for(int i = 0; i < m; i++) {
+    SubMat in_row = mat_get_row(test_input, i);
+    SubMat out_row = mat_get_row(test_output, i);
+    nn_forward(n, in_row, res);
+
+    int greatest = 0;
+    for(int j = 1; j < OUTPUT(n).cols; j++)
+      greatest = res[greatest] < res[j] ? j : greatest;
+
+    if(greatest == *out_row.data) correct++;
+    for(int j = 0; j < OUTPUT(n).cols; j++) printf("%.2lf ", res[j]);
+    printf("%d %d\n", greatest, greatest == *out_row.data);
+  }
+  printf("total: %zu, correct infered: %d\n", m, correct);
+}
+
 void nn_save_up(NN n) {
   printf("%zu\n", n.nnLayers + 1);
   for(int i = 0; i < n.nnLayers + 1; i++) {
@@ -263,8 +293,9 @@ NN nn_back_up(double (* activate_function)(double)) {
   
   for(int i = 0; i < n.nnLayers; i++) {
     for(int j = 0; j < n.ws[i].rows; j++) {
-      for(int k = 0; k < n.ws[i].cols; k++)
+      for(int k = 0; k < n.ws[i].cols; k++) {
         scanf("%lf", &MAT_AT(n.ws[i], j, k));
+      }
     }
     for(int j = 0; j < n.bs[i].cols; j++)
       scanf("%lf", &LINE_AT(n.bs[i], j));
@@ -275,7 +306,7 @@ NN nn_back_up(double (* activate_function)(double)) {
 
 double sigmoid(double x) 
 {
-  return 1.0f/(1.0f + (1.0f/exp(x)));
+  return 1.0f/(1.0f + (exp(-x)));
 }
 
 double deriv_sig(double x)
@@ -285,10 +316,10 @@ double deriv_sig(double x)
 
 double reLU(double x)
 {
-  return x < 0.0f ? 0 : x;
+  return x < 0.01 * x  ? (0.01 * x) : x;
 }
 
 double deriv_reLu(double x)
 {
-  return x > 0 ? 1.0f : 0.0f;
+  return x >= 0 ? 1.0f : 0.0f;
 }

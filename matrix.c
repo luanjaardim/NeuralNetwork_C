@@ -40,7 +40,7 @@ Mat mat_create_from(size_t rows, size_t cols, double elements[rows][cols])
   Mat m = mat_create(rows, cols);
   for(size_t i = 0; i < rows; i++)
     for(size_t j = 0; j < cols; j++)
-      *mat_at(m, i, j) = (double) elements[i][j];
+      MAT_AT(m, i, j) = (double) elements[i][j];
   return m;
 }
 
@@ -49,7 +49,7 @@ void mat_print(Mat m, const char* variable_name)
   printf("%s = {\n", variable_name);
   for(size_t i = 0; i < m.rows; i++) {
     for(size_t j = 0; j < m.cols; j++) {
-      printf("%*s%.4lf", (int)2, "",  *mat_at(m, i, j));
+      printf("%*s%.4lf", (int)2, "",  MAT_AT(m, i, j));
     }
     printf("\n");
   }
@@ -60,7 +60,7 @@ void mat_fill(Mat m, double element)
 {
   for(size_t i = 0; i < m.rows; i++) {
     for(size_t j = 0; j < m.cols; j++) {
-      *mat_at(m, i, j) = element;
+      MAT_AT(m, i, j) = element;
     }
   }
 }
@@ -75,7 +75,7 @@ void mat_randomize(Mat m)
 {
   for(size_t i = 0; i < m.rows; i++) {
     for(size_t j = 0; j < m.cols; j++) {
-      *mat_at(m, i, j) = random_value();
+      MAT_AT(m, i, j) = random_value() - random_value();
     }
   }
 }
@@ -96,9 +96,9 @@ void mat_mul(Mat dest, Mat m1, Mat m2)
 
   for(size_t i = 0; i < dest.rows; i++) {
     for(size_t j = 0; j < dest.cols; j++) {
-       *mat_at(dest, i, j) = 0.0f;
+       MAT_AT(dest, i, j) = 0.0f;
       for(size_t k = 0; k < m1.cols; k++)
-        *mat_at(dest, i, j) += *mat_at(m1, i, k) * *mat_at(m2, k, j);
+        MAT_AT(dest, i, j) += MAT_AT(m1, i, k) * MAT_AT(m2, k, j);
     }
   }
 }
@@ -107,7 +107,7 @@ void mat_const_mul(Mat dest, double val)
 {
   for(size_t i = 0; i < dest.rows; i++) {
     for(size_t j = 0; j < dest.cols; j++) {
-      *mat_at(dest, i, j) *= val;
+      MAT_AT(dest, i, j) *= val;
     }
   }
 }
@@ -119,7 +119,7 @@ void mat_add(Mat dest, Mat first, Mat second)
 
   for(size_t i = 0; i < dest.rows; i++) {
     for(size_t j = 0; j < dest.cols; j++) {
-      *mat_at(dest, i, j) = *mat_at(first, i, j) + *mat_at(second, i, j);
+      MAT_AT(dest, i, j) = MAT_AT(first, i, j) + MAT_AT(second, i, j);
     }
   }
 }
@@ -131,7 +131,7 @@ void mat_sub(Mat dest, Mat first, Mat second)
 
   for(size_t i = 0; i < dest.rows; i++) {
     for(size_t j = 0; j < dest.cols; j++) {
-      *mat_at(dest, i, j) = *mat_at(first, i, j) - *mat_at(second, i, j);
+      MAT_AT(dest, i, j) = MAT_AT(first, i, j) - MAT_AT(second, i, j);
     }
   }
 }
@@ -142,7 +142,7 @@ void mat_apply_fn(Mat dst, Mat src, double (* function)(double))
 
   for(size_t i = 0; i < dst.rows; i++) {
     for(size_t j = 0; j < dst.cols; j++) {
-      *mat_at(dst, i, j) = function(*mat_at(src, i, j));
+      MAT_AT(dst, i, j) = function(MAT_AT(src, i, j));
     }
   }
 }
